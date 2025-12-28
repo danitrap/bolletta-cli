@@ -1,4 +1,5 @@
 import type { Row } from "../format";
+import { t } from "../presentation/i18n";
 
 function isScoreComplete(score?: { home: number | null; away: number | null } | null): score is {
   home: number;
@@ -8,86 +9,92 @@ function isScoreComplete(score?: { home: number | null; away: number | null } | 
 }
 
 export function computeProgress(r: Row): string {
-  if (r.BET_STATUS === "WIN") return "Vinta";
-  if (r.BET_STATUS === "LOSE") return "Persa";
-  if (r.BET_STATUS === "NOT_FOUND") return "Non trovata";
+  if (r.BET_STATUS === "WIN") return t("progress.win");
+  if (r.BET_STATUS === "LOSE") return t("progress.lose");
+  if (r.BET_STATUS === "NOT_FOUND") return t("progress.notFound");
   if (r.REASON.toUpperCase().startsWith("ERROR")) {
     const code = r.REASON.split(":", 2)[1] || "UNKNOWN";
-    return `Errore: ${code}`;
+    return t("progress.error", { code });
   }
 
   const score = isScoreComplete(r.SCORE_VALUE) ? r.SCORE_VALUE : null;
-  if (!score) return "In attesa di punteggio";
+  if (!score) return t("progress.awaitingScore");
 
   const { home, away } = score;
   const sum = home + away;
+  const joiner = ` ${t("common.and")} `;
+  const joinParts = (parts: string[]) => parts.join(joiner);
+  const missingList = (parts: string[]) =>
+    t(parts.length > 1 ? "progress.missingPlural" : "progress.missing", { items: joinParts(parts) });
 
   if (r.BET_KIND === "X2Under35") {
     const x2 = away >= home;
     const under = sum <= 3;
-    if (x2 && under) return "Vincente al momento";
+    if (x2 && under) return t("progress.winningNow");
     const parts: string[] = [];
-    if (!x2) parts.push("X2");
-    if (!under) parts.push("Under 3.5");
-    return `Manca: ${parts.join(" e ")}`;
+    if (!x2) parts.push(t("progress.parts.x2"));
+    if (!under) parts.push(t("progress.parts.under35"));
+    return missingList(parts);
   }
 
   if (r.BET_KIND === "X2Over25") {
     const x2 = away >= home;
     const over = sum >= 3;
-    if (x2 && over) return "Vincente al momento";
+    if (x2 && over) return t("progress.winningNow");
     const parts: string[] = [];
-    if (!x2) parts.push("X2");
-    if (!over) parts.push("Over 2.5");
-    return `Manca: ${parts.join(" e ")}`;
+    if (!x2) parts.push(t("progress.parts.x2"));
+    if (!over) parts.push(t("progress.parts.over25"));
+    return missingList(parts);
   }
 
   if (r.BET_KIND === "GG") {
     const hg = home >= 1;
     const ag = away >= 1;
-    if (hg && ag) return "Vincente al momento";
-    if (!hg && !ag) return "Mancano 2 gol (uno per squadra)";
-    if (!hg) return "Manca: gol casa";
-    if (!ag) return "Manca: gol ospiti";
+    if (hg && ag) return t("progress.winningNow");
+    if (!hg && !ag) return t("progress.missingTwoGoalsOnePerTeam");
+    if (!hg) return t("progress.missingHomeGoal");
+    if (!ag) return t("progress.missingAwayGoal");
   }
 
   if (r.BET_KIND === "12") {
-    if (home !== away) return "Vincente al momento";
-    return "Manca: sblocco pareggio";
+    if (home !== away) return t("progress.winningNow");
+    return t("progress.missingUnlockDraw");
   }
 
   if (r.BET_KIND === "Over25") {
-    if (sum >= 3) return "Vincente al momento";
+    if (sum >= 3) return t("progress.winningNow");
     const need = 3 - sum;
-    return need === 1 ? "Manca: 1 gol" : `Mancano: ${need} gol`;
+    return need === 1
+      ? t("progress.missingGoals", { count: need })
+      : t("progress.missingGoalsPlural", { count: need });
   }
 
   if (r.BET_KIND === "1") {
-    if (home > away) return "Vincente al momento";
-    if (home === away) return "Manca: vantaggio casa";
-    return "Manca: rimonta casa";
+    if (home > away) return t("progress.winningNow");
+    if (home === away) return t("progress.missingHomeLead");
+    return t("progress.missingHomeComeback");
   }
 
   if (r.BET_KIND === "1X") {
-    if (home >= away) return "Vincente al momento";
-    return "Manca: pareggio o vantaggio casa";
+    if (home >= away) return t("progress.winningNow");
+    return t("progress.missingHomeLeadOrDraw");
   }
 
   if (r.BET_KIND === "X2") {
-    if (away >= home) return "Vincente al momento";
-    return "Manca: pareggio o vantaggio ospiti";
+    if (away >= home) return t("progress.winningNow");
+    return t("progress.missingAwayLeadOrDraw");
   }
 
   if (r.BET_KIND === "2") {
-    if (away > home) return "Vincente al momento";
-    if (home === away) return "Manca: vantaggio ospiti";
-    return "Manca: rimonta ospiti";
+    if (away > home) return t("progress.winningNow");
+    if (home === away) return t("progress.missingAwayLead");
+    return t("progress.missingAwayComeback");
   }
 
   if (r.BET_KIND === "Under25") {
-    if (sum <= 2) return "Vincente al momento";
-    return "Soglia superata";
+    if (sum <= 2) return t("progress.winningNow");
+    return t("progress.thresholdExceeded");
   }
 
-  return "In corso";
+  return t("progress.inProgress");
 }

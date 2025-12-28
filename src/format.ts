@@ -2,6 +2,7 @@ import type { BetType } from "./betTypes";
 import type { BetStatus } from "./types";
 import { computeProgress } from "./domain/progress";
 import { translateBetStatus, translateMatchStatus, translateReason } from "./presentation/statusLabels";
+import { t } from "./presentation/i18n";
 
 export type ScoreValue = { home: number | null; away: number | null };
 
@@ -22,19 +23,23 @@ export type Row = {
   ERROR_PROVIDER?: string;
 };
 
-export const tableHeaders = [
-  { key: "MATCH", label: "Partita" },
-  { key: "KICKOFF", label: "Inizio" },
-  { key: "SCORE", label: "Punteggio" },
-  { key: "MATCH_STATUS", label: "Stato" },
-  { key: "BET", label: "Scommessa" },
-  { key: "BET_STATUS", label: "Esito" },
-  { key: "REASON", label: "Motivo" },
-  { key: "PROGRESS", label: "Andamento" },
-  { key: "PROVIDER", label: "Fonte" },
+export const tableHeaderKeys = [
+  "MATCH",
+  "KICKOFF",
+  "SCORE",
+  "MATCH_STATUS",
+  "BET",
+  "BET_STATUS",
+  "REASON",
+  "PROGRESS",
+  "PROVIDER",
 ] as const;
 
-type HeaderKey = (typeof tableHeaders)[number]["key"];
+export type HeaderKey = (typeof tableHeaderKeys)[number];
+
+export function getTableHeaders(): Array<{ key: HeaderKey; label: string }> {
+  return tableHeaderKeys.map((key) => ({ key, label: t(`headers.${key}`) }));
+}
 
 function cellValue(key: HeaderKey, row: Row): string {
   switch (key) {
@@ -51,32 +56,33 @@ function cellValue(key: HeaderKey, row: Row): string {
   }
 }
 
-function measureTable(rows: Row[]): { widths: Map<string, number>; matrix: string[][] } {
+function measureTable(rows: Row[]): { widths: Map<string, number>; matrix: string[][]; headers: Array<{ key: HeaderKey; label: string }> } {
   const widths = new Map<string, number>();
-  for (const h of tableHeaders) widths.set(h.key, h.label.length);
+  const headers = getTableHeaders();
+  for (const h of headers) widths.set(h.key, h.label.length);
   const matrix: string[][] = [];
   for (const r of rows) {
     const rowVals: string[] = [];
-    for (const h of tableHeaders) {
+    for (const h of headers) {
       const v = cellValue(h.key, r);
       rowVals.push(v);
       widths.set(h.key, Math.max(widths.get(h.key) || 0, v.length));
     }
     matrix.push(rowVals);
   }
-  return { widths, matrix };
+  return { widths, matrix, headers };
 }
 
 export function formatTable(rows: Row[]): string {
-  const { widths, matrix } = measureTable(rows);
+  const { widths, matrix, headers } = measureTable(rows);
   const pad = (s: string, w: number) => s + " ".repeat(Math.max(0, w - s.length));
   const sep = " | ";
-  const headerLine = tableHeaders.map((h) => pad(h.label, widths.get(h.key) || h.label.length)).join(sep);
-  const line = tableHeaders
+  const headerLine = headers.map((h) => pad(h.label, widths.get(h.key) || h.label.length)).join(sep);
+  const line = headers
     .map((h) => "".padEnd(widths.get(h.key) || h.label.length, "-"))
     .join("-+-");
   const body = matrix
-    .map((rowVals) => tableHeaders.map((h, i) => pad(rowVals[i], widths.get(h.key) || h.label.length)).join(sep))
+    .map((rowVals) => headers.map((h, i) => pad(rowVals[i], widths.get(h.key) || h.label.length)).join(sep))
     .join("\n");
   return `${headerLine}\n${line}\n${body}`;
 }
@@ -102,7 +108,7 @@ export function buildTableModel(rows: Row[]): {
   headers: Array<{ key: HeaderKey; label: string; width: number }>;
   rows: string[][];
 } {
-  const { widths, matrix } = measureTable(rows);
-  const headers = tableHeaders.map((h) => ({ key: h.key, label: h.label, width: widths.get(h.key) || h.label.length }));
-  return { headers, rows: matrix };
+  const { widths, matrix, headers } = measureTable(rows);
+  const headersWithWidth = headers.map((h) => ({ key: h.key, label: h.label, width: widths.get(h.key) || h.label.length }));
+  return { headers: headersWithWidth, rows: matrix };
 }

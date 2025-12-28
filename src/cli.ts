@@ -7,6 +7,7 @@ export type CliOptions = {
   timeout: number; // ms
   verbose: boolean;
   window: number; // +/- days around date
+  lang: string;
 };
 
 function parseNumber(value: string | undefined, fallback: number, min = 0): number {
@@ -25,6 +26,7 @@ export function parseArgs(argv: string[]): CliOptions {
     timeout: 10000,
     verbose: false,
     window: 0,
+    lang: "it",
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -55,6 +57,10 @@ export function parseArgs(argv: string[]): CliOptions {
         break;
       case "--verbose":
         out.verbose = true;
+        break;
+      case "--lang":
+        out.lang = String(v);
+        if (!a.includes("=")) i++;
         break;
       case "--window":
         out.window = parseNumber(v, out.window, 0);

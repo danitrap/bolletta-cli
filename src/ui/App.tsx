@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Box, Text, useApp, useInput } from "ink";
 import type { CliOptions } from "../cli";
 import { checkOnce } from "../check";
-import { buildTableModel, tableHeaders, type Row } from "../format";
+import { buildTableModel, tableHeaderKeys, type Row } from "../format";
+import { t } from "../presentation/i18n";
 import { setCycleId, sleep } from "../util/http";
 
 export default function App({ args }: { args: CliOptions }) {
@@ -92,7 +93,7 @@ export default function App({ args }: { args: CliOptions }) {
     return " ".repeat(left) + s + " ".repeat(right);
   };
 
-  const MAXW: Record<(typeof tableHeaders)[number]["key"], number> = {
+  const MAXW: Record<(typeof tableHeaderKeys)[number], number> = {
     MATCH: 28,
     KICKOFF: 32,
     SCORE: 9,
@@ -103,7 +104,7 @@ export default function App({ args }: { args: CliOptions }) {
     PROGRESS: 22,
     PROVIDER: 12,
   };
-  const MINW: Record<(typeof tableHeaders)[number]["key"], number> = {
+  const MINW: Record<(typeof tableHeaderKeys)[number], number> = {
     MATCH: 16,
     KICKOFF: 20,
     SCORE: 5,
@@ -115,7 +116,7 @@ export default function App({ args }: { args: CliOptions }) {
     PROVIDER: 8,
   };
 
-  const ALIGN: Record<(typeof tableHeaders)[number]["key"], "left" | "center"> = {
+  const ALIGN: Record<(typeof tableHeaderKeys)[number], "left" | "center"> = {
     MATCH: "left",
     KICKOFF: "center",
     SCORE: "center",
@@ -153,7 +154,7 @@ export default function App({ args }: { args: CliOptions }) {
     // expand if there is spare room: prefer KICKOFF, then MATCH, then PROGRESS
     if (total < spaceAvailable) {
       let extra = spaceAvailable - total;
-      const orderIncKeys: Array<(typeof tableHeaders)[number]["key"]> = ["KICKOFF", "MATCH", "PROGRESS"];
+      const orderIncKeys: Array<(typeof tableHeaderKeys)[number]> = ["KICKOFF", "MATCH", "PROGRESS"];
       while (extra > 0) {
         let progressed = false;
         for (const k of orderIncKeys) {
@@ -176,7 +177,7 @@ export default function App({ args }: { args: CliOptions }) {
     // shrink if overflow: reduce less important columns first
     if (total > spaceAvailable) {
       let over = total - spaceAvailable;
-      const orderDecKeys: Array<(typeof tableHeaders)[number]["key"]> = [
+      const orderDecKeys: Array<(typeof tableHeaderKeys)[number]> = [
         "PROVIDER",
         "REASON",
         "BET",
@@ -218,7 +219,7 @@ export default function App({ args }: { args: CliOptions }) {
     return `${left}${segs.join(mid)}${right}`;
   };
 
-  function colorFor(key: (typeof tableHeaders)[number]["key"], r: Row): Parameters<typeof Text>[0]["color"] | undefined {
+  function colorFor(key: (typeof tableHeaderKeys)[number], r: Row): Parameters<typeof Text>[0]["color"] | undefined {
     if (key === "BET_STATUS") {
       switch (r.BET_STATUS) {
         case "WIN":
@@ -250,28 +251,44 @@ export default function App({ args }: { args: CliOptions }) {
     return undefined;
   }
 
+  const title = t("app.title");
+  const cycleLabel = t("app.cycle");
+  const refreshHint = t("app.refreshHint");
+  const loadingText = t("app.loading");
+  const completedText = t("app.completed");
+  const doneText = t("app.done");
+  const quitText = t("app.quit");
+  const refreshText = t("app.refresh");
+  const updatingText = t("app.updating");
+  const nextRefreshText = t("app.nextRefresh", { seconds: remaining });
+  const groupOther = t("group.other");
+  const spinnerChar = ["⠋","⠙","⠹","⠸","⠼","⠴","⠦","⠧"][spin];
+  const statusIcon = loading ? spinnerChar : "✔";
+  const headerPlain = `${title} · ${statusIcon} ${cycleLabel} #${cycle} · ${refreshHint}`;
+  const headerPadding = " ".repeat(Math.max(0, termCols - headerPlain.length));
+
   return (
     <Box flexDirection="column">
       <Box>
         <Text wrap="truncate-end">
-          <Text color="cyanBright">Bolletta</Text>
+          <Text color="cyanBright">{title}</Text>
           <Text> · </Text>
           <Text>
             {loading ? (
-              <Text color="magenta">{["⠋","⠙","⠹","⠸","⠼","⠴","⠦","⠧"][spin]}</Text>
+              <Text color="magenta">{spinnerChar}</Text>
             ) : (
               <Text color="green">✔</Text>
             )}
-            {" "}ciclo #{cycle}
+            {" "}{cycleLabel} #{cycle}
           </Text>
           <Text> · </Text>
-          <Text dimColor>premi r per aggiornare</Text>
-          {" ".repeat(Math.max(0, termCols - ("Bolletta · ✔ ciclo #".length + String(cycle).length + " premi r per aggiornare".length)))}
+          <Text dimColor>{refreshHint}</Text>
+          {headerPadding}
         </Text>
       </Box>
       <Box marginTop={1} flexDirection="column">
         {rows.length === 0 && loading ? (
-          <Text dimColor>Caricamento…</Text>
+          <Text dimColor>{loadingText}</Text>
         ) : (
           <>
             {/* Top border */}
@@ -297,7 +314,7 @@ export default function App({ args }: { args: CliOptions }) {
             {(() => {
               const groups = new Map<string, number[]>();
               rows.forEach((row, idx) => {
-                const g = row.COMPETITION || row.PROVIDER || "Altro";
+                const g = row.COMPETITION || row.PROVIDER || groupOther;
                 if (!groups.has(g)) groups.set(g, []);
                 groups.get(g)!.push(idx);
               });
@@ -359,10 +376,10 @@ export default function App({ args }: { args: CliOptions }) {
             const total = rows.length;
             const done = rows.filter((r) => ["WIN", "LOSE", "NOT_FOUND"].includes(r.BET_STATUS)).length;
             const msg = allDone
-              ? ` Completato • ${done}/${total} concluse • q per uscire `
+              ? ` ${completedText} • ${done}/${total} ${doneText} • ${quitText} `
               : loading
-              ? ` Aggiornamento in corso… • ${done}/${total} concluse • r per aggiornare • q per uscire `
-              : ` Prossimo refresh tra ${remaining}s • ${done}/${total} concluse • r per aggiornare • q per uscire `;
+              ? ` ${updatingText} • ${done}/${total} ${doneText} • ${refreshText} • ${quitText} `
+              : ` ${nextRefreshText} • ${done}/${total} ${doneText} • ${refreshText} • ${quitText} `;
             return msg + " ".repeat(Math.max(0, termCols - msg.length));
           })()}
         </Text>

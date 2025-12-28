@@ -1,32 +1,33 @@
 import type { BetStatus } from "../types";
+import { t } from "./i18n";
 
 export function translateMatchStatus(s: string): string {
   switch (s.toUpperCase()) {
     case "SCHEDULED":
     case "TIMED":
-      return "Programmata";
+      return t("status.match.scheduled");
     case "IN_PLAY":
     case "LIVE":
-      return "In corso";
+      return t("status.match.live");
     case "PAUSED":
-      return "Intervallo";
+      return t("status.match.paused");
     case "FINISHED":
-      return "Finita";
+      return t("status.match.finished");
     case "SUSPENDED":
-      return "Sospesa";
+      return t("status.match.suspended");
     case "POSTPONED":
-      return "Rinviata";
+      return t("status.match.postponed");
     case "CANCELLED":
     case "CANCELED":
-      return "Annullata";
+      return t("status.match.cancelled");
     case "AWARDED":
-      return "Omologata";
+      return t("status.match.awarded");
     case "ABANDONED":
-      return "Abbandonata";
+      return t("status.match.abandoned");
     case "NOT_FOUND":
-      return "Non trovata";
+      return t("status.match.notFound");
     case "ERROR":
-      return "Errore";
+      return t("status.match.error");
     default:
       return s;
   }
@@ -35,30 +36,30 @@ export function translateMatchStatus(s: string): string {
 export function translateBetStatus(s: BetStatus): string {
   switch (s) {
     case "WIN":
-      return "Vinta";
+      return t("status.bet.win");
     case "LOSE":
-      return "Persa";
+      return t("status.bet.lose");
     case "PENDING":
-      return "In corso";
+      return t("status.bet.pending");
     case "NOT_FOUND":
-      return "Non trovata";
+      return t("status.bet.notFound");
   }
 }
 
 export function translateReason(s: string): string {
   const upper = s.toUpperCase();
-  if (upper.startsWith("ERROR")) return "Errore";
+  if (upper.startsWith("ERROR")) return t("reason.error");
   switch (upper) {
     case "FINISHED":
-      return "Finita";
+      return t("reason.finished");
     case "NO_SCORE":
-      return "Senza risultato";
+      return t("reason.noScore");
     case "POSTPONED/CANCELED":
-      return "Rinviata/Annullata";
+      return t("reason.postponedCanceled");
     case "LIVE":
-      return "In corso";
+      return t("reason.live");
     case "NOT_FOUND":
-      return "Non trovata";
+      return t("reason.notFound");
     default:
       return translateMatchStatus(s);
   }

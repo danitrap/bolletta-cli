@@ -7,6 +7,7 @@ describe("parseArgs", () => {
     expect(args.interval).toBe(60);
     expect(args.timeout).toBe(10000);
     expect(args.window).toBe(0);
+    expect(args.lang).toBe("it");
   });
 
   test("numeric parsing with invalid values", () => {
@@ -21,5 +22,10 @@ describe("parseArgs", () => {
     expect(args.json).toBeTrue();
     expect(args.once).toBeTrue();
     expect(args.verbose).toBeTrue();
+  });
+
+  test("lang parsing", () => {
+    const args = parseArgs(["--lang", "en"]);
+    expect(args.lang).toBe("en");
   });
 });
