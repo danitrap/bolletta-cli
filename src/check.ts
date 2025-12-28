@@ -1,5 +1,6 @@
 import { schedina, computeOutcome } from "./bets";
 import { fdCompetitionName } from "./domain/competitions";
+import { makeReason, matchStatusCodeFromProvider } from "./domain/codes";
 import { resolveMatch } from "./matchResolver";
 import type { RowData } from "./domain/row";
 
@@ -20,19 +21,24 @@ export async function checkOnce(
         const isError = resolved.reason === "ERROR";
         const errorCode = resolved.error?.code ?? "UNKNOWN";
         const outcome = isError
-          ? { betStatus: "PENDING" as const, reason: `ERROR:${errorCode}` }
+          ? { betStatus: "PENDING" as const, reason: makeReason("ERROR", errorCode) }
           : computeOutcome(pick, resolved.match);
         const compLabel =
           resolved.match?.competition?.name ||
           (resolved.provider === "football-data" ? fdCompetitionName(resolved.match?.competition?.id) : undefined) ||
           (resolved.provider === "thesportsdb" ? "TheSportsDB" : undefined) ||
           resolved.provider;
+        const matchStatus = isError
+          ? "ERROR"
+          : resolved.match
+          ? matchStatusCodeFromProvider(resolved.match.status)
+          : "NOT_FOUND";
         const row: RowData = {
           home: pick.home,
           away: pick.away,
           kickoffTime: resolved.match?.kickoffTime,
           score: resolved.match?.score ?? null,
-          matchStatus: isError ? "ERROR" : resolved.match?.status.toUpperCase() ?? "NOT_FOUND",
+          matchStatus,
           betLabel: pick.bet.label,
           betKind: pick.bet.kind,
           betStatus: outcome.betStatus,
@@ -55,7 +61,7 @@ export async function checkOnce(
           betLabel: pick.bet.label,
           betKind: pick.bet.kind,
           betStatus: "PENDING",
-          reason: "ERROR:UNKNOWN",
+          reason: makeReason("ERROR", "UNKNOWN"),
           provider: "error",
           competition: "Errore",
           errorCode: "UNKNOWN",

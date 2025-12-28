@@ -46,6 +46,7 @@ const translations: Record<Locale, Dictionary> = {
         abandoned: "Abbandonata",
         notFound: "Non trovata",
         error: "Errore",
+        unknown: "Sconosciuta",
       },
       bet: {
         win: "Vinta",
@@ -91,6 +92,18 @@ const translations: Record<Locale, Dictionary> = {
         over25: "Over 2.5",
       },
     },
+    bets: {
+      X2Under35: "X2 + Under 3.5",
+      GG: "GG",
+      "12": "12",
+      Over25: "Over 2.5",
+      "1": "1",
+      X2: "X2",
+      "1X": "1X",
+      "2": "2",
+      Under25: "Under 2.5",
+      X2Over25: "X2 + Over 2.5",
+    },
   },
   en: {
     common: {
@@ -135,6 +148,7 @@ const translations: Record<Locale, Dictionary> = {
         abandoned: "Abandoned",
         notFound: "Not found",
         error: "Error",
+        unknown: "Unknown",
       },
       bet: {
         win: "Won",
@@ -179,6 +193,18 @@ const translations: Record<Locale, Dictionary> = {
         under35: "Under 3.5",
         over25: "Over 2.5",
       },
+    },
+    bets: {
+      X2Under35: "X2 + Under 3.5",
+      GG: "GG",
+      "12": "12",
+      Over25: "Over 2.5",
+      "1": "1",
+      X2: "X2",
+      "1X": "1X",
+      "2": "2",
+      Under25: "Under 2.5",
+      X2Over25: "X2 + Over 2.5",
     },
   },
 };

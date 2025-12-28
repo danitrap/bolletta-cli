@@ -3,6 +3,7 @@ import { computeProgress } from "./domain/progress";
 import type { RowData } from "./domain/row";
 import { translateBetStatus, translateMatchStatus, translateReason } from "./presentation/statusLabels";
 import { t } from "./presentation/i18n";
+import type { BetType } from "./betTypes";
 
 export const tableHeaderKeys = [
   "MATCH",
@@ -26,12 +27,17 @@ function formatMatch(row: RowData): string {
   return `${row.home} - ${row.away}`;
 }
 
-function cellValue(key: HeaderKey, row: RowData, timezone: string): string {
+function betLabelFor(bet: BetType | undefined, fallback?: string): string {
+  if (!bet) return fallback || "";
+  return t(`bets.${bet}`);
+}
+
+function cellValue(key: HeaderKey, row: RowData, timezone: string, lang: string): string {
   switch (key) {
     case "MATCH":
       return formatMatch(row);
     case "KICKOFF":
-      return fmtKickoff(row.kickoffTime, timezone);
+      return fmtKickoff(row.kickoffTime, timezone, lang);
     case "SCORE":
       return fmtScore(row.score);
     case "MATCH_STATUS":
@@ -39,7 +45,7 @@ function cellValue(key: HeaderKey, row: RowData, timezone: string): string {
     case "BET_STATUS":
       return translateBetStatus(row.betStatus);
     case "BET":
-      return row.betLabel;
+      return betLabelFor(row.betKind, row.betLabel);
     case "REASON":
       return translateReason(row.reason);
     case "PROGRESS":
@@ -53,7 +59,8 @@ function cellValue(key: HeaderKey, row: RowData, timezone: string): string {
 
 function measureTable(
   rows: RowData[],
-  timezone: string
+  timezone: string,
+  lang: string
 ): { widths: Map<string, number>; matrix: string[][]; headers: Array<{ key: HeaderKey; label: string }> } {
   const widths = new Map<string, number>();
   const headers = getTableHeaders();
@@ -62,7 +69,7 @@ function measureTable(
   for (const r of rows) {
     const rowVals: string[] = [];
     for (const h of headers) {
-      const v = cellValue(h.key, r, timezone);
+      const v = cellValue(h.key, r, timezone, lang);
       rowVals.push(v);
       widths.set(h.key, Math.max(widths.get(h.key) || 0, v.length));
     }
@@ -71,8 +78,8 @@ function measureTable(
   return { widths, matrix, headers };
 }
 
-export function formatTable(rows: RowData[], timezone: string): string {
-  const { widths, matrix, headers } = measureTable(rows, timezone);
+export function formatTable(rows: RowData[], timezone: string, lang: string): string {
+  const { widths, matrix, headers } = measureTable(rows, timezone, lang);
   const pad = (s: string, w: number) => s + " ".repeat(Math.max(0, w - s.length));
   const sep = " | ";
   const headerLine = headers.map((h) => pad(h.label, widths.get(h.key) || h.label.length)).join(sep);
@@ -85,7 +92,7 @@ export function formatTable(rows: RowData[], timezone: string): string {
   return `${headerLine}\n${line}\n${body}`;
 }
 
-export function toJSON(rows: RowData[], timezone: string) {
+export function toJSON(rows: RowData[], timezone: string, lang: string) {
   return rows.map((row) => {
     const [reasonPrefix, reasonCode] = String(row.reason).split(":", 2);
     const code =
@@ -100,10 +107,10 @@ export function toJSON(rows: RowData[], timezone: string) {
         : undefined;
     return {
       MATCH: formatMatch(row),
-      KICKOFF: fmtKickoff(row.kickoffTime, timezone),
+      KICKOFF: fmtKickoff(row.kickoffTime, timezone, lang),
       SCORE: fmtScore(row.score),
       MATCH_STATUS: row.matchStatus,
-      BET: row.betLabel,
+      BET: row.betKind || row.betLabel,
       BET_STATUS: row.betStatus,
       REASON: row.reason,
       PROVIDER: row.provider,
@@ -112,11 +119,11 @@ export function toJSON(rows: RowData[], timezone: string) {
   });
 }
 
-export function buildTableModel(rows: RowData[], timezone: string): {
+export function buildTableModel(rows: RowData[], timezone: string, lang: string): {
   headers: Array<{ key: HeaderKey; label: string; width: number }>;
   rows: string[][];
 } {
-  const { widths, matrix, headers } = measureTable(rows, timezone);
+  const { widths, matrix, headers } = measureTable(rows, timezone, lang);
   const headersWithWidth = headers.map((h) => ({ key: h.key, label: h.label, width: widths.get(h.key) || h.label.length }));
   return { headers: headersWithWidth, rows: matrix };
 }

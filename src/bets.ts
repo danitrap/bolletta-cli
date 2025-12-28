@@ -1,5 +1,6 @@
 import type { BetStatus, ProviderMatch } from "./types";
 import type { BetType, ConfigPick } from "./betTypes";
+import { makeReason, reasonFromProviderStatus } from "./domain/codes";
 import config from "../schedina.config";
 
 export type Score = { home: number; away: number };
@@ -53,16 +54,16 @@ export function evalX2Over25(score: Score): boolean {
 }
 
 export type BetKind =
-  | { kind: "X2Under35"; label: "X2 + Under 3.5"; eval: typeof evalX2Under35 }
-  | { kind: "GG"; label: "GG"; eval: typeof evalGG }
-  | { kind: "12"; label: "12"; eval: typeof eval12 }
-  | { kind: "Over25"; label: "Over 2.5"; eval: typeof evalOver25 }
-  | { kind: "1"; label: "1"; eval: typeof eval1 }
-  | { kind: "X2"; label: "X2"; eval: typeof evalX2 }
-  | { kind: "1X"; label: "1X"; eval: typeof eval1X }
-  | { kind: "2"; label: "2"; eval: typeof eval2 }
-  | { kind: "Under25"; label: "Under 2.5"; eval: typeof evalUnder25 }
-  | { kind: "X2Over25"; label: "X2 + Over 2.5"; eval: typeof evalX2Over25 };
+  | { kind: "X2Under35"; label: string; eval: typeof evalX2Under35 }
+  | { kind: "GG"; label: string; eval: typeof evalGG }
+  | { kind: "12"; label: string; eval: typeof eval12 }
+  | { kind: "Over25"; label: string; eval: typeof evalOver25 }
+  | { kind: "1"; label: string; eval: typeof eval1 }
+  | { kind: "X2"; label: string; eval: typeof evalX2 }
+  | { kind: "1X"; label: string; eval: typeof eval1X }
+  | { kind: "2"; label: string; eval: typeof eval2 }
+  | { kind: "Under25"; label: string; eval: typeof evalUnder25 }
+  | { kind: "X2Over25"; label: string; eval: typeof evalX2Over25 };
 
 export type Pick = {
   home: string;
@@ -70,17 +71,17 @@ export type Pick = {
   bet: BetKind;
 };
 
-const betMap: Record<BetType, { label: string; eval: (s: Score) => boolean }> = {
-  X2Under35: { label: "X2 + Under 3.5", eval: evalX2Under35 },
-  GG: { label: "GG", eval: evalGG },
-  "12": { label: "12", eval: eval12 },
-  Over25: { label: "Over 2.5", eval: evalOver25 },
-  "1": { label: "1", eval: eval1 },
-  X2: { label: "X2", eval: evalX2 },
-  "1X": { label: "1X", eval: eval1X },
-  "2": { label: "2", eval: eval2 },
-  Under25: { label: "Under 2.5", eval: evalUnder25 },
-  X2Over25: { label: "X2 + Over 2.5", eval: evalX2Over25 },
+const betMap: Record<BetType, { eval: (s: Score) => boolean }> = {
+  X2Under35: { eval: evalX2Under35 },
+  GG: { eval: evalGG },
+  "12": { eval: eval12 },
+  Over25: { eval: evalOver25 },
+  "1": { eval: eval1 },
+  X2: { eval: evalX2 },
+  "1X": { eval: eval1X },
+  "2": { eval: eval2 },
+  Under25: { eval: evalUnder25 },
+  X2Over25: { eval: evalX2Over25 },
 };
 
 function toRuntimePick(p: ConfigPick): Pick {
@@ -88,7 +89,7 @@ function toRuntimePick(p: ConfigPick): Pick {
   return {
     home: p.home,
     away: p.away,
-    bet: { kind: p.bet, label: def.label as BetKind["label"], eval: def.eval as any },
+    bet: { kind: p.bet, label: p.bet, eval: def.eval as any },
   };
 }
 
@@ -98,15 +99,14 @@ export function computeOutcome(pick: Pick, match: ProviderMatch | null): {
   betStatus: BetStatus;
   reason: string;
 } {
-  if (!match) return { betStatus: "NOT_FOUND", reason: "NOT_FOUND" };
+  if (!match) return { betStatus: "NOT_FOUND", reason: makeReason("NOT_FOUND") };
   if (match.status !== "finished") {
     if (match.status === "postponed" || match.status === "canceled")
-      return { betStatus: "PENDING", reason: "POSTPONED/CANCELED" };
-    if (match.status === "live") return { betStatus: "PENDING", reason: "LIVE" };
-    return { betStatus: "PENDING", reason: match.status.toUpperCase() };
+      return { betStatus: "PENDING", reason: makeReason("POSTPONED/CANCELED") };
+    return { betStatus: "PENDING", reason: makeReason(reasonFromProviderStatus(match.status)) };
   }
-  if (!isScoreComplete(match.score)) return { betStatus: "PENDING", reason: "NO_SCORE" };
+  if (!isScoreComplete(match.score)) return { betStatus: "PENDING", reason: makeReason("NO_SCORE") };
   const s = match.score as Score;
   const ok = pick.bet.eval(s);
-  return { betStatus: ok ? "WIN" : "LOSE", reason: "FINISHED" };
+  return { betStatus: ok ? "WIN" : "LOSE", reason: makeReason("FINISHED") };
 }

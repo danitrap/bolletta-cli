@@ -17,7 +17,7 @@ async function main() {
       args.verbose,
       args.window
     );
-    console.log(JSON.stringify(toJSON(results, args.timezone), null, 2));
+    console.log(JSON.stringify(toJSON(results, args.timezone, args.lang), null, 2));
     return;
   }
 

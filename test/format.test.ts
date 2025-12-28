@@ -18,7 +18,7 @@ describe("toJSON", () => {
         provider: "football-data",
       },
     ];
-    const out = toJSON(rows, "Europe/Rome");
+    const out = toJSON(rows, "Europe/Rome", "it");
     expect(out[0].error?.code).toBe("HTTP");
   });
 });

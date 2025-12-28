@@ -83,7 +83,7 @@ export default function App({ args }: { args: CliOptions }) {
     };
   }, [args, exit]);
 
-  const model = useMemo(() => buildTableModel(rows, args.timezone), [rows, args.timezone]);
+  const model = useMemo(() => buildTableModel(rows, args.timezone, args.lang), [rows, args.timezone, args.lang]);
 
   const padRight = (s: string, w: number) => s + " ".repeat(Math.max(0, w - s.length));
   const padCenter = (s: string, w: number) => {

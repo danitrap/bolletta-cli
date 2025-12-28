@@ -1,5 +1,6 @@
 import type { BetStatus } from "../types";
 import { t } from "./i18n";
+import { parseReason } from "../domain/codes";
 
 export function translateMatchStatus(s: string): string {
   switch (s.toUpperCase()) {
@@ -28,6 +29,8 @@ export function translateMatchStatus(s: string): string {
       return t("status.match.notFound");
     case "ERROR":
       return t("status.match.error");
+    case "UNKNOWN":
+      return t("status.match.unknown");
     default:
       return s;
   }
@@ -47,9 +50,9 @@ export function translateBetStatus(s: BetStatus): string {
 }
 
 export function translateReason(s: string): string {
-  const upper = s.toUpperCase();
-  if (upper.startsWith("ERROR")) return t("reason.error");
-  switch (upper) {
+  const parsed = parseReason(s);
+  if (parsed.code === "ERROR") return t("reason.error");
+  switch (parsed.code) {
     case "FINISHED":
       return t("reason.finished");
     case "NO_SCORE":
@@ -60,7 +63,9 @@ export function translateReason(s: string): string {
       return t("reason.live");
     case "NOT_FOUND":
       return t("reason.notFound");
+    case "UNKNOWN":
+      return translateMatchStatus("UNKNOWN");
     default:
-      return translateMatchStatus(s);
+      return translateMatchStatus(parsed.code);
   }
 }

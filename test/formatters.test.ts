@@ -12,7 +12,7 @@ describe("formatters", () => {
 
   test("fmtKickoff formats ISO date in a timezone", () => {
     const iso = "2025-01-02T12:34:00Z";
-    const out = fmtKickoff(iso, "Europe/Rome");
+    const out = fmtKickoff(iso, "Europe/Rome", "it");
     expect(out).toContain("02/01/2025");
   });
 });

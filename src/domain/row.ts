@@ -1,4 +1,5 @@
 import type { BetType } from "../betTypes";
+import type { MatchStatusCode } from "./codes";
 import type { BetStatus } from "../types";
 
 export type ScoreValue = { home: number | null; away: number | null };
@@ -8,7 +9,7 @@ export type RowData = {
   away: string;
   kickoffTime?: string;
   score?: ScoreValue | null;
-  matchStatus: string;
+  matchStatus: MatchStatusCode;
   betLabel: string;
   betKind?: BetType;
   betStatus: BetStatus;
