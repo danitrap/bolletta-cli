@@ -1,12 +1,10 @@
 import { schedina, computeOutcome } from "./bets";
 import { fdCompetitionName } from "./domain/competitions";
-import { fmtKickoff, fmtScore } from "./domain/formatters";
 import { resolveMatch } from "./matchResolver";
-import type { Row } from "./format";
+import type { RowData } from "./domain/row";
 
 export async function checkOnce(
   dateISO: string,
-  tz: string,
   timeoutMs: number,
   verbose: boolean,
   dateWindow: number
@@ -29,40 +27,40 @@ export async function checkOnce(
           (resolved.provider === "football-data" ? fdCompetitionName(resolved.match?.competition?.id) : undefined) ||
           (resolved.provider === "thesportsdb" ? "TheSportsDB" : undefined) ||
           resolved.provider;
-        const row: Row = {
-          MATCH: `${pick.home} - ${pick.away}`,
-          KICKOFF: fmtKickoff(resolved.match?.kickoffTime, tz),
-          SCORE: fmtScore(resolved.match?.score),
-          MATCH_STATUS: isError ? "ERROR" : resolved.match?.status.toUpperCase() ?? "NOT_FOUND",
-          BET: pick.bet.label,
-          BET_KIND: pick.bet.kind,
-          BET_STATUS: outcome.betStatus,
-          REASON: outcome.reason,
-          PROVIDER: resolved.provider,
-          SCORE_VALUE: resolved.match?.score ?? null,
-          COMPETITION: compLabel,
-          ERROR_CODE: isError ? errorCode : undefined,
-          ERROR_MESSAGE: isError ? resolved.error?.message : undefined,
-          ERROR_PROVIDER: isError ? resolved.error?.provider ?? resolved.provider : undefined,
+        const row: RowData = {
+          home: pick.home,
+          away: pick.away,
+          kickoffTime: resolved.match?.kickoffTime,
+          score: resolved.match?.score ?? null,
+          matchStatus: isError ? "ERROR" : resolved.match?.status.toUpperCase() ?? "NOT_FOUND",
+          betLabel: pick.bet.label,
+          betKind: pick.bet.kind,
+          betStatus: outcome.betStatus,
+          reason: outcome.reason,
+          provider: resolved.provider,
+          competition: compLabel,
+          errorCode: isError ? errorCode : undefined,
+          errorMessage: isError ? resolved.error?.message : undefined,
+          errorProvider: isError ? resolved.error?.provider ?? resolved.provider : undefined,
         };
         return row;
       } catch (e) {
         if (verbose) console.warn(`[check] error for ${pick.home} vs ${pick.away}: ${(e as Error).message}`);
-        const row: Row = {
-          MATCH: `${pick.home} - ${pick.away}`,
-          KICKOFF: "",
-          SCORE: "-",
-          MATCH_STATUS: "ERROR",
-          BET: pick.bet.label,
-          BET_KIND: pick.bet.kind,
-          BET_STATUS: "PENDING",
-          REASON: "ERROR:UNKNOWN",
-          PROVIDER: "error",
-          SCORE_VALUE: null,
-          COMPETITION: "Errore",
-          ERROR_CODE: "UNKNOWN",
-          ERROR_MESSAGE: (e as Error).message,
-          ERROR_PROVIDER: "check",
+        const row: RowData = {
+          home: pick.home,
+          away: pick.away,
+          kickoffTime: undefined,
+          score: null,
+          matchStatus: "ERROR",
+          betLabel: pick.bet.label,
+          betKind: pick.bet.kind,
+          betStatus: "PENDING",
+          reason: "ERROR:UNKNOWN",
+          provider: "error",
+          competition: "Errore",
+          errorCode: "UNKNOWN",
+          errorMessage: (e as Error).message,
+          errorProvider: "check",
         };
         return row;
       }

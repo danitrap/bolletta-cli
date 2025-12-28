@@ -1,4 +1,4 @@
-import type { Row } from "../format";
+import type { RowData } from "./row";
 import { t } from "../presentation/i18n";
 
 function isScoreComplete(score?: { home: number | null; away: number | null } | null): score is {
@@ -8,16 +8,16 @@ function isScoreComplete(score?: { home: number | null; away: number | null } | 
   return !!score && score.home != null && score.away != null;
 }
 
-export function computeProgress(r: Row): string {
-  if (r.BET_STATUS === "WIN") return t("progress.win");
-  if (r.BET_STATUS === "LOSE") return t("progress.lose");
-  if (r.BET_STATUS === "NOT_FOUND") return t("progress.notFound");
-  if (r.REASON.toUpperCase().startsWith("ERROR")) {
-    const code = r.REASON.split(":", 2)[1] || "UNKNOWN";
+export function computeProgress(r: RowData): string {
+  if (r.betStatus === "WIN") return t("progress.win");
+  if (r.betStatus === "LOSE") return t("progress.lose");
+  if (r.betStatus === "NOT_FOUND") return t("progress.notFound");
+  if (r.reason.toUpperCase().startsWith("ERROR")) {
+    const code = r.reason.split(":", 2)[1] || "UNKNOWN";
     return t("progress.error", { code });
   }
 
-  const score = isScoreComplete(r.SCORE_VALUE) ? r.SCORE_VALUE : null;
+  const score = isScoreComplete(r.score) ? r.score : null;
   if (!score) return t("progress.awaitingScore");
 
   const { home, away } = score;
@@ -27,7 +27,7 @@ export function computeProgress(r: Row): string {
   const missingList = (parts: string[]) =>
     t(parts.length > 1 ? "progress.missingPlural" : "progress.missing", { items: joinParts(parts) });
 
-  if (r.BET_KIND === "X2Under35") {
+  if (r.betKind === "X2Under35") {
     const x2 = away >= home;
     const under = sum <= 3;
     if (x2 && under) return t("progress.winningNow");
@@ -37,7 +37,7 @@ export function computeProgress(r: Row): string {
     return missingList(parts);
   }
 
-  if (r.BET_KIND === "X2Over25") {
+  if (r.betKind === "X2Over25") {
     const x2 = away >= home;
     const over = sum >= 3;
     if (x2 && over) return t("progress.winningNow");
@@ -47,7 +47,7 @@ export function computeProgress(r: Row): string {
     return missingList(parts);
   }
 
-  if (r.BET_KIND === "GG") {
+  if (r.betKind === "GG") {
     const hg = home >= 1;
     const ag = away >= 1;
     if (hg && ag) return t("progress.winningNow");
@@ -56,12 +56,12 @@ export function computeProgress(r: Row): string {
     if (!ag) return t("progress.missingAwayGoal");
   }
 
-  if (r.BET_KIND === "12") {
+  if (r.betKind === "12") {
     if (home !== away) return t("progress.winningNow");
     return t("progress.missingUnlockDraw");
   }
 
-  if (r.BET_KIND === "Over25") {
+  if (r.betKind === "Over25") {
     if (sum >= 3) return t("progress.winningNow");
     const need = 3 - sum;
     return need === 1
@@ -69,29 +69,29 @@ export function computeProgress(r: Row): string {
       : t("progress.missingGoalsPlural", { count: need });
   }
 
-  if (r.BET_KIND === "1") {
+  if (r.betKind === "1") {
     if (home > away) return t("progress.winningNow");
     if (home === away) return t("progress.missingHomeLead");
     return t("progress.missingHomeComeback");
   }
 
-  if (r.BET_KIND === "1X") {
+  if (r.betKind === "1X") {
     if (home >= away) return t("progress.winningNow");
     return t("progress.missingHomeLeadOrDraw");
   }
 
-  if (r.BET_KIND === "X2") {
+  if (r.betKind === "X2") {
     if (away >= home) return t("progress.winningNow");
     return t("progress.missingAwayLeadOrDraw");
   }
 
-  if (r.BET_KIND === "2") {
+  if (r.betKind === "2") {
     if (away > home) return t("progress.winningNow");
     if (home === away) return t("progress.missingAwayLead");
     return t("progress.missingAwayComeback");
   }
 
-  if (r.BET_KIND === "Under25") {
+  if (r.betKind === "Under25") {
     if (sum <= 2) return t("progress.winningNow");
     return t("progress.thresholdExceeded");
   }

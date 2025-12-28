@@ -2,13 +2,14 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Box, Text, useApp, useInput } from "ink";
 import type { CliOptions } from "../cli";
 import { checkOnce } from "../check";
-import { buildTableModel, tableHeaderKeys, type Row } from "../format";
+import { buildTableModel, tableHeaderKeys } from "../format";
+import type { RowData } from "../domain/row";
 import { t } from "../presentation/i18n";
 import { setCycleId, sleep } from "../util/http";
 
 export default function App({ args }: { args: CliOptions }) {
   const { exit } = useApp();
-  const [rows, setRows] = useState<Row[]>([]);
+  const [rows, setRows] = useState<RowData[]>([]);
   const [cycle, setCycle] = useState(0);
   const [remaining, setRemaining] = useState(0);
   const [allDone, setAllDone] = useState(false);
@@ -50,7 +51,6 @@ export default function App({ args }: { args: CliOptions }) {
         try {
           const { results, allDone } = await checkOnce(
             args.date,
-            args.timezone,
             args.timeout,
             args.verbose,
             args.window
@@ -83,7 +83,7 @@ export default function App({ args }: { args: CliOptions }) {
     };
   }, [args, exit]);
 
-  const model = useMemo(() => buildTableModel(rows), [rows]);
+  const model = useMemo(() => buildTableModel(rows, args.timezone), [rows, args.timezone]);
 
   const padRight = (s: string, w: number) => s + " ".repeat(Math.max(0, w - s.length));
   const padCenter = (s: string, w: number) => {
@@ -219,9 +219,9 @@ export default function App({ args }: { args: CliOptions }) {
     return `${left}${segs.join(mid)}${right}`;
   };
 
-  function colorFor(key: (typeof tableHeaderKeys)[number], r: Row): Parameters<typeof Text>[0]["color"] | undefined {
+  function colorFor(key: (typeof tableHeaderKeys)[number], r: RowData): Parameters<typeof Text>[0]["color"] | undefined {
     if (key === "BET_STATUS") {
-      switch (r.BET_STATUS) {
+      switch (r.betStatus) {
         case "WIN":
           return "green";
         case "LOSE":
@@ -239,7 +239,7 @@ export default function App({ args }: { args: CliOptions }) {
       return undefined; // neutral; text reads fine
     }
     if (key === "MATCH_STATUS") {
-      const s = r.MATCH_STATUS.toUpperCase();
+      const s = r.matchStatus.toUpperCase();
       if (s.includes("LIVE") || s.includes("IN_PLAY")) return "cyan";
       if (s.includes("FINISHED") || s.includes("AWARDED")) return "green";
       if (s.includes("SCHEDULED") || s.includes("TIMED")) return "blue";
@@ -314,7 +314,7 @@ export default function App({ args }: { args: CliOptions }) {
             {(() => {
               const groups = new Map<string, number[]>();
               rows.forEach((row, idx) => {
-                const g = row.COMPETITION || row.PROVIDER || groupOther;
+                const g = row.competition || row.provider || groupOther;
                 if (!groups.has(g)) groups.set(g, []);
                 groups.get(g)!.push(idx);
               });
@@ -374,7 +374,7 @@ export default function App({ args }: { args: CliOptions }) {
         <Text wrap="truncate-end" inverse>
           {(() => {
             const total = rows.length;
-            const done = rows.filter((r) => ["WIN", "LOSE", "NOT_FOUND"].includes(r.BET_STATUS)).length;
+            const done = rows.filter((r) => ["WIN", "LOSE", "NOT_FOUND"].includes(r.betStatus)).length;
             const msg = allDone
               ? ` ${completedText} • ${done}/${total} ${doneText} • ${quitText} `
               : loading

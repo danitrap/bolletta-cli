@@ -13,12 +13,11 @@ async function main() {
   if (args.json) {
     const { results } = await checkOnce(
       args.date,
-      args.timezone,
       args.timeout,
       args.verbose,
       args.window
     );
-    console.log(JSON.stringify(toJSON(results), null, 2));
+    console.log(JSON.stringify(toJSON(results, args.timezone), null, 2));
     return;
   }
 
