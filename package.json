@@ -1,0 +1,18 @@
+{
+  "name": "bolletta-cli",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "check": "bun src/index.ts",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "ink": "^4.4.1",
+    "react": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.66",
+    "bun-types": "^1.1.20",
+    "typescript": "^5.6.3"
+  }
+}
