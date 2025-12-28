@@ -1,4 +1,5 @@
 import type { BetType } from "./betTypes";
+import type { BetStatus } from "./types";
 import { computeProgress } from "./domain/progress";
 import { translateBetStatus, translateMatchStatus, translateReason } from "./presentation/statusLabels";
 

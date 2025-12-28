@@ -45,6 +45,7 @@ export default function App({ args }: { args: CliOptions }) {
           setCycleId(next);
           return next;
         });
+        let cycleAllDone = false;
         try {
           const { results, allDone } = await checkOnce(
             args.date,
@@ -56,6 +57,7 @@ export default function App({ args }: { args: CliOptions }) {
           if (cancelled) return;
           setRows(results);
           setAllDone(allDone);
+          cycleAllDone = allDone;
         } catch (e) {
           // keep previous rows, just show status
         } finally {
@@ -63,7 +65,7 @@ export default function App({ args }: { args: CliOptions }) {
         }
 
         if (cancelled) return;
-        if (allDone || args.once) break;
+        if (cycleAllDone || args.once) break;
 
         let r = Math.max(0, Math.floor(args.interval));
         setRemaining(r);
