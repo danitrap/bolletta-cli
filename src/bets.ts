@@ -94,24 +94,6 @@ function toRuntimePick(p: ConfigPick): Pick {
 
 export const schedina: Pick[] = config.map(toRuntimePick);
 
-export function decideBetStatus(match: ProviderMatch | null): {
-  betStatus: BetStatus;
-  reason: string;
-} {
-  if (!match) return { betStatus: "NOT_FOUND", reason: "NOT_FOUND" };
-  if (match.status === "finished") {
-    if (isScoreComplete(match.score)) return { betStatus: "PENDING", reason: "FINISHED" };
-    return { betStatus: "PENDING", reason: "NO_SCORE" };
-  }
-  if (match.status === "postponed" || match.status === "canceled") {
-    return { betStatus: "PENDING", reason: "POSTPONED/CANCELED" };
-  }
-  if (match.status === "live") {
-    return { betStatus: "PENDING", reason: "LIVE" };
-  }
-  return { betStatus: "PENDING", reason: match.status.toUpperCase() };
-}
-
 export function computeOutcome(pick: Pick, match: ProviderMatch | null): {
   betStatus: BetStatus;
   reason: string;

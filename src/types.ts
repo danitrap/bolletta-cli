@@ -29,6 +29,15 @@ export type ResolvedMatch = {
   match: ProviderMatch | null;
   confidence: number; // 0..1
   reason?: string;
+  error?: ResolveError;
 };
 
 export type BetStatus = "WIN" | "LOSE" | "PENDING" | "NOT_FOUND";
+
+export type ResolveErrorCode = "NETWORK" | "TIMEOUT" | "HTTP" | "UNKNOWN";
+
+export type ResolveError = {
+  code: ResolveErrorCode;
+  message: string;
+  provider?: string;
+};

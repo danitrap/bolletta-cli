@@ -1,7 +1,8 @@
 import { FootballDataProvider } from "./providers/footballData";
 import { TheSportsDbProvider } from "./providers/theSportsDb";
+import { classifyError } from "./domain/errors";
 import { normalizeTeamName, teamSimilarity } from "./util/strings";
-import type { ProviderMatch, ResolvedMatch } from "./types";
+import type { ProviderMatch, ResolveError, ResolvedMatch } from "./types";
 
 const fd = new FootballDataProvider();
 const tsd = new TheSportsDbProvider();
@@ -22,6 +23,7 @@ export async function resolveMatch(
   const window = Math.max(0, opts.dateWindow ?? 0);
   const normalizedHome = normalizeTeamName(home);
   const normalizedAway = normalizeTeamName(away);
+  let lastError: ResolveError | undefined;
 
   // 1) football-data primary
   if (fd.canUse()) {
@@ -51,6 +53,7 @@ export async function resolveMatch(
         return { provider: fd.name, match: best, confidence };
       }
     } catch (e) {
+      lastError = classifyError(e, fd.name);
       if (verbose) console.warn(`[resolver] football-data error: ${(e as Error).message}`);
     }
   }
@@ -70,9 +73,19 @@ export async function resolveMatch(
       }
     }
   } catch (e) {
+    lastError = classifyError(e, tsd.name);
     if (verbose) console.warn(`[resolver] thesportsdb error: ${(e as Error).message}`);
   }
 
+  if (lastError) {
+    return {
+      provider: lastError.provider ?? (fd.canUse() ? fd.name : tsd.name),
+      match: null,
+      confidence: 0,
+      reason: "ERROR",
+      error: lastError,
+    };
+  }
   return { provider: fd.canUse() ? fd.name : tsd.name, match: null, confidence: 0, reason: "NOT_FOUND" };
 }
 

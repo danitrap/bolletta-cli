@@ -1,49 +1,8 @@
 import { schedina, computeOutcome } from "./bets";
+import { fdCompetitionName } from "./domain/competitions";
+import { fmtKickoff, fmtScore } from "./domain/formatters";
 import { resolveMatch } from "./matchResolver";
 import type { Row } from "./format";
-
-function fdCompetitionName(id?: string): string | undefined {
-  switch (String(id || "")) {
-    case "2001":
-      return "Champions League";
-    case "2002":
-      return "Bundesliga";
-    case "2014":
-      return "La Liga";
-    case "2015":
-      return "Ligue 1";
-    case "2019":
-      return "Serie A";
-    case "2021":
-      return "Premier League";
-    default:
-      return id ? `Competizione ${id}` : undefined;
-  }
-}
-
-export function fmtKickoff(iso: string | undefined, tz: string): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const fmt = new Intl.DateTimeFormat("it-IT", {
-    timeZone: tz,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  return fmt.format(d);
-}
-
-export function fmtScore(
-  s?: { home: number | null; away: number | null } | null,
-  status?: string
-): string {
-  if (s && s.home != null && s.away != null) return `${s.home}-${s.away}`;
-  const st = (status || "").toLowerCase();
-  if (st === "scheduled" || st === "live") return "0-0";
-  return "-";
-}
 
 export async function checkOnce(
   dateISO: string,
@@ -54,31 +13,59 @@ export async function checkOnce(
 ) {
   const results = await Promise.all(
     schedina.map(async (pick) => {
-      const resolved = await resolveMatch(pick.home, pick.away, dateISO, {
-        timeoutMs,
-        verbose,
-        dateWindow,
-      });
-      const outcome = computeOutcome(pick, resolved.match);
-      const compLabel =
-        resolved.match?.competition?.name ||
-        (resolved.provider === "football-data" ? fdCompetitionName(resolved.match?.competition?.id) : undefined) ||
-        (resolved.provider === "thesportsdb" ? "TheSportsDB" : undefined) ||
-        resolved.provider;
-      const row: Row = {
-        MATCH: `${pick.home} - ${pick.away}`,
-        KICKOFF: fmtKickoff(resolved.match?.kickoffTime, tz),
-        SCORE: fmtScore(resolved.match?.score, resolved.match?.status),
-        MATCH_STATUS: resolved.match?.status.toUpperCase() ?? "NOT_FOUND",
-        BET: pick.bet.label,
-        BET_STATUS: outcome.betStatus,
-        REASON: outcome.reason,
-        PROVIDER: resolved.provider,
-        // non visual, usato per i raggruppamenti in UI
-        // @ts-ignore
-        COMPETITION: compLabel,
-      };
-      return row;
+      try {
+        const resolved = await resolveMatch(pick.home, pick.away, dateISO, {
+          timeoutMs,
+          verbose,
+          dateWindow,
+        });
+        const isError = resolved.reason === "ERROR";
+        const errorCode = resolved.error?.code ?? "UNKNOWN";
+        const outcome = isError
+          ? { betStatus: "PENDING" as const, reason: `ERROR:${errorCode}` }
+          : computeOutcome(pick, resolved.match);
+        const compLabel =
+          resolved.match?.competition?.name ||
+          (resolved.provider === "football-data" ? fdCompetitionName(resolved.match?.competition?.id) : undefined) ||
+          (resolved.provider === "thesportsdb" ? "TheSportsDB" : undefined) ||
+          resolved.provider;
+        const row: Row = {
+          MATCH: `${pick.home} - ${pick.away}`,
+          KICKOFF: fmtKickoff(resolved.match?.kickoffTime, tz),
+          SCORE: fmtScore(resolved.match?.score),
+          MATCH_STATUS: isError ? "ERROR" : resolved.match?.status.toUpperCase() ?? "NOT_FOUND",
+          BET: pick.bet.label,
+          BET_KIND: pick.bet.kind,
+          BET_STATUS: outcome.betStatus,
+          REASON: outcome.reason,
+          PROVIDER: resolved.provider,
+          SCORE_VALUE: resolved.match?.score ?? null,
+          COMPETITION: compLabel,
+          ERROR_CODE: isError ? errorCode : undefined,
+          ERROR_MESSAGE: isError ? resolved.error?.message : undefined,
+          ERROR_PROVIDER: isError ? resolved.error?.provider ?? resolved.provider : undefined,
+        };
+        return row;
+      } catch (e) {
+        if (verbose) console.warn(`[check] error for ${pick.home} vs ${pick.away}: ${(e as Error).message}`);
+        const row: Row = {
+          MATCH: `${pick.home} - ${pick.away}`,
+          KICKOFF: "",
+          SCORE: "-",
+          MATCH_STATUS: "ERROR",
+          BET: pick.bet.label,
+          BET_KIND: pick.bet.kind,
+          BET_STATUS: "PENDING",
+          REASON: "ERROR:UNKNOWN",
+          PROVIDER: "error",
+          SCORE_VALUE: null,
+          COMPETITION: "Errore",
+          ERROR_CODE: "UNKNOWN",
+          ERROR_MESSAGE: (e as Error).message,
+          ERROR_PROVIDER: "check",
+        };
+        return row;
+      }
     })
   );
   const allDone = results.every(

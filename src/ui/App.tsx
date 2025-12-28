@@ -97,6 +97,7 @@ export default function App({ args }: { args: CliOptions }) {
     MATCH_STATUS: 14,
     BET: 16,
     BET_STATUS: 12,
+    REASON: 14,
     PROGRESS: 22,
     PROVIDER: 12,
   };
@@ -107,6 +108,7 @@ export default function App({ args }: { args: CliOptions }) {
     MATCH_STATUS: 10,
     BET: 8,
     BET_STATUS: 7,
+    REASON: 10,
     PROGRESS: 12,
     PROVIDER: 8,
   };
@@ -118,6 +120,7 @@ export default function App({ args }: { args: CliOptions }) {
     MATCH_STATUS: "center",
     BET: "left",
     BET_STATUS: "center",
+    REASON: "left",
     PROGRESS: "left",
     PROVIDER: "left",
   };
@@ -173,6 +176,7 @@ export default function App({ args }: { args: CliOptions }) {
       let over = total - spaceAvailable;
       const orderDecKeys: Array<(typeof tableHeaders)[number]["key"]> = [
         "PROVIDER",
+        "REASON",
         "BET",
         "PROGRESS",
         "MATCH_STATUS",
@@ -291,7 +295,7 @@ export default function App({ args }: { args: CliOptions }) {
             {(() => {
               const groups = new Map<string, number[]>();
               rows.forEach((row, idx) => {
-                const g = (row as any).COMPETITION || row.PROVIDER || "Altro";
+                const g = row.COMPETITION || row.PROVIDER || "Altro";
                 if (!groups.has(g)) groups.set(g, []);
                 groups.get(g)!.push(idx);
               });

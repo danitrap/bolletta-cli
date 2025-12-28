@@ -1,6 +1,7 @@
 import { fetchJSON } from "../util/http";
+import { mapTheSportsDbStatus } from "../domain/status";
 import { normalizeTeamName, teamSimilarity } from "../util/strings";
-import type { MatchProvider, ProviderMatch, ProviderStatus } from "../types";
+import type { MatchProvider, ProviderMatch } from "../types";
 
 type SearchEventsResp = {
   event?: Array<{
@@ -27,19 +28,6 @@ type LookupEventResp = {
   }>;
 };
 
-function mapStatus(s?: string | null): ProviderStatus {
-  const v = (s || "").toLowerCase();
-  if (!v) return "unknown";
-  if (v.includes("finished") || v.includes("ft")) return "finished";
-  if (v.includes("postponed")) return "postponed";
-  if (v.includes("canceled") || v.includes("cancelled")) return "canceled";
-  if (v.includes("live") || v.includes("in play") || v.includes("1h") || v.includes("2h"))
-    return "live";
-  if (v.includes("scheduled") || v.includes("not started") || v.includes("timed"))
-    return "scheduled";
-  return "unknown";
-}
-
 export class TheSportsDbProvider implements MatchProvider {
   name = "thesportsdb";
 
@@ -63,6 +51,7 @@ export class TheSportsDbProvider implements MatchProvider {
     const mk = (s: string) =>
       s
         .trim()
+        .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .replace(/[^A-Za-z0-9\s]/g, " ")
         .replace(/\s+/g, "_");
@@ -121,7 +110,7 @@ export class TheSportsDbProvider implements MatchProvider {
       home: ev.strHomeTeam ?? "",
       away: ev.strAwayTeam ?? "",
       kickoffTime: kickoff,
-      status: mapStatus(ev.strStatus),
+      status: mapTheSportsDbStatus(ev.strStatus),
       score,
       raw: ev,
       competition: { id: ev.idLeague, name: ev.strLeague },

@@ -9,6 +9,12 @@ export type CliOptions = {
   window: number; // +/- days around date
 };
 
+function parseNumber(value: string | undefined, fallback: number, min = 0): number {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, n);
+}
+
 export function parseArgs(argv: string[]): CliOptions {
   const out: CliOptions = {
     interval: 60,
@@ -26,7 +32,7 @@ export function parseArgs(argv: string[]): CliOptions {
     const [k, v] = a.includes("=") ? a.split("=", 2) : [a, argv[i + 1]];
     switch (k) {
       case "--interval":
-        out.interval = Number(v);
+        out.interval = parseNumber(v, out.interval, 0);
         if (!a.includes("=")) i++;
         break;
       case "--json":
@@ -44,14 +50,14 @@ export function parseArgs(argv: string[]): CliOptions {
         if (!a.includes("=")) i++;
         break;
       case "--timeout":
-        out.timeout = Number(v);
+        out.timeout = parseNumber(v, out.timeout, 0);
         if (!a.includes("=")) i++;
         break;
       case "--verbose":
         out.verbose = true;
         break;
       case "--window":
-        out.window = Number(v);
+        out.window = parseNumber(v, out.window, 0);
         if (!a.includes("=")) i++;
         break;
     }

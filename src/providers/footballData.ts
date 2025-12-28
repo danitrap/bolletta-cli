@@ -1,5 +1,6 @@
 import { fetchJSON } from "../util/http";
-import type { MatchProvider, ProviderMatch, ProviderStatus } from "../types";
+import { mapFootballDataStatus } from "../domain/status";
+import type { MatchProvider, ProviderMatch } from "../types";
 
 type FootballDataMatch = {
   id: number;
@@ -19,27 +20,6 @@ type FootballDataResponse = {
   resultSet?: unknown;
   matches: FootballDataMatch[];
 };
-
-function mapStatus(s: string): ProviderStatus {
-  switch (s) {
-    case "FINISHED":
-      return "finished";
-    case "IN_PLAY":
-    case "PAUSED":
-      return "live";
-    case "SCHEDULED":
-    case "TIMED":
-      return "scheduled";
-    case "POSTPONED":
-      return "postponed";
-    case "CANCELED":
-      return "canceled";
-    case "SUSPENDED":
-      return "live"; // treat as live/pending
-    default:
-      return "unknown";
-  }
-}
 
 export class FootballDataProvider implements MatchProvider {
   name = "football-data";
@@ -78,7 +58,7 @@ export class FootballDataProvider implements MatchProvider {
           home: m.homeTeam?.name ?? "",
           away: m.awayTeam?.name ?? "",
           kickoffTime: m.utcDate,
-          status: mapStatus(m.status ?? ""),
+          status: mapFootballDataStatus(m.status ?? ""),
           score,
           raw: m,
           competition: { id: String(comp) },

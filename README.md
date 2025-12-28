@@ -64,8 +64,8 @@ export default config satisfies ReadonlyArray<ConfigPick>;
 
 **Output**
 
-- Tabella (UI, italiano): `Partita | Inizio | Punteggio | Stato | Scommessa | Esito | Motivo | Fonte`
-- Con `--json` stampa array JSON con chiavi originali inglesi (`MATCH`, `KICKOFF`, `SCORE`, `MATCH_STATUS`, `BET`, `BET_STATUS`, `REASON`, `PROVIDER`).
+- Tabella (UI, italiano): `Partita | Inizio | Punteggio | Stato | Scommessa | Esito | Motivo | Andamento | Fonte`
+- Con `--json` stampa array JSON con chiavi originali inglesi (`MATCH`, `KICKOFF`, `SCORE`, `MATCH_STATUS`, `BET`, `BET_STATUS`, `REASON`, `PROVIDER`) e un campo `error` opzionale con `{ code, message?, provider? }`.
 
 **Provider**
 
