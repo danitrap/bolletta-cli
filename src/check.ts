@@ -73,7 +73,7 @@ export async function checkOnce(
     })
   );
   const allDone = results.every(
-    (r) => r.BET_STATUS === "WIN" || r.BET_STATUS === "LOSE" || r.BET_STATUS === "NOT_FOUND"
+    (r) => r.betStatus === "WIN" || r.betStatus === "LOSE" || r.betStatus === "NOT_FOUND"
   );
   return { results, allDone };
 }

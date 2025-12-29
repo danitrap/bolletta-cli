@@ -16,6 +16,25 @@ function parseNumber(value: string | undefined, fallback: number, min = 0): numb
   return Math.max(min, n);
 }
 
+function isValidDateFormat(dateStr: string): boolean {
+  // Check YYYY-MM-DD format
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
+
+  // Check if it's a valid date
+  const date = new Date(dateStr + 'T00:00:00Z');
+  return !isNaN(date.getTime()) && date.toISOString().slice(0, 10) === dateStr;
+}
+
+function isValidTimezone(tz: string): boolean {
+  try {
+    // Test if timezone is valid by attempting to format a date with it
+    new Date().toLocaleString('en-US', { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function parseArgs(argv: string[]): CliOptions {
   const out: CliOptions = {
     interval: 60,
@@ -44,11 +63,21 @@ export function parseArgs(argv: string[]): CliOptions {
         out.once = true;
         break;
       case "--date":
-        out.date = String(v);
+        const dateValue = String(v);
+        if (!isValidDateFormat(dateValue)) {
+          console.error(`Error: Invalid date format "${dateValue}". Expected YYYY-MM-DD (e.g., 2025-12-28)`);
+          process.exit(1);
+        }
+        out.date = dateValue;
         if (!a.includes("=")) i++;
         break;
       case "--timezone":
-        out.timezone = String(v);
+        const tzValue = String(v);
+        if (!isValidTimezone(tzValue)) {
+          console.error(`Error: Invalid timezone "${tzValue}". Use IANA timezone names (e.g., Europe/Rome, America/New_York)`);
+          process.exit(1);
+        }
+        out.timezone = tzValue;
         if (!a.includes("=")) i++;
         break;
       case "--timeout":

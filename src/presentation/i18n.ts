@@ -1,6 +1,7 @@
 export type Locale = "it" | "en";
 
-type Dictionary = Record<string, string | Dictionary>;
+type DictionaryValue = string | { [key: string]: DictionaryValue };
+type Dictionary = Record<string, DictionaryValue>;
 
 const translations: Record<Locale, Dictionary> = {
   it: {

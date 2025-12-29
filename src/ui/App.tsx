@@ -15,6 +15,7 @@ export default function App({ args }: { args: CliOptions }) {
   const [allDone, setAllDone] = useState(false);
   const [loading, setLoading] = useState(true);
   const [spin, setSpin] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   const refreshNow = React.useRef(false);
 
   useInput((input, key) => {
@@ -59,8 +60,12 @@ export default function App({ args }: { args: CliOptions }) {
           setRows(results);
           setAllDone(allDone);
           cycleAllDone = allDone;
+          setError(null); // Clear error on success
         } catch (e) {
-          // keep previous rows, just show status
+          // Keep previous rows, but show error to user
+          const errorMessage = e instanceof Error ? e.message : String(e);
+          setError(errorMessage);
+          if (args.verbose) console.error(`[App] Check failed: ${errorMessage}`);
         } finally {
           setLoading(false);
         }
@@ -128,17 +133,40 @@ export default function App({ args }: { args: CliOptions }) {
     PROVIDER: "left",
   };
 
-  const [termCols, setTermCols] = useState<number>(typeof process !== 'undefined' && (process.stdout as any)?.columns || 80);
+  // Type-safe access to process.stdout with proper typing
+  interface NodeStdout {
+    columns?: number;
+    write(str: string): boolean;
+    on(event: 'resize', listener: () => void): void;
+    off(event: 'resize', listener: () => void): void;
+  }
+
+  const getStdout = (): NodeStdout | undefined => {
+    if (typeof process === 'undefined' || !process.stdout) return undefined;
+    return process.stdout as unknown as NodeStdout;
+  };
+
+  const [termCols, setTermCols] = useState<number>(() => {
+    const stdout = getStdout();
+    return stdout?.columns || 80;
+  });
+
   useEffect(() => {
+    const stdout = getStdout();
+    if (!stdout) return;
+
     const onResize = () => {
-      setTermCols(((process.stdout as any)?.columns) || 80);
+      setTermCols(stdout.columns || 80);
       try {
         // Clear screen and move cursor to home to avoid residual lines after resize
-        (process.stdout as any)?.write?.("\x1b[2J\x1b[H");
+        stdout.write("\x1b[2J\x1b[H");
       } catch {}
     };
-    (process.stdout as any)?.on?.('resize', onResize);
-    return () => (process.stdout as any)?.off?.('resize', onResize);
+
+    stdout.on('resize', onResize);
+    return () => {
+      stdout.off('resize', onResize);
+    };
   }, []);
 
   const widths = useMemo(() => {
@@ -370,7 +398,12 @@ export default function App({ args }: { args: CliOptions }) {
           </>
         )}
       </Box>
-      <Box marginTop={1}>
+      <Box marginTop={1} flexDirection="column">
+        {error && (
+          <Box marginBottom={1}>
+            <Text color="red" wrap="truncate-end">⚠ Error: {error}</Text>
+          </Box>
+        )}
         <Text wrap="truncate-end" inverse>
           {(() => {
             const total = rows.length;
